@@ -35,7 +35,9 @@ app.post("/redirect-url", async (req: Request, res: Response) => {
     AppKey: API_KEY,
   });
   // Respond to the webhook request
-  res.status(200).send(`Webhook received successfully! ${customerDetails}`);
+  res.status(200)
+    .send(`Webhook received successfully! 
+    ${JSON.stringify(customerDetails.data)}`);
 });
 
 export const api = functions.https.onRequest(app);
