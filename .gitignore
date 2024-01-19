@@ -7,3 +7,9 @@ typings/
 
 # Node.js dependency directory
 node_modules/
+
+# ignore log
+*.log
+
+.idea
+.DS_Store

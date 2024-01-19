@@ -7,13 +7,26 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import {onRequest} from "firebase-functions/v2/https";
+import * as functions from "firebase-functions/v2";
 import * as logger from "firebase-functions/logger";
+import express, {Express, Request, Response} from "express";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+const app: Express = express();
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+app.use(express.json());
+
+app.get("/health", (req, res) => {
+  res.status(200).send({status: "OK"});
+});
+
+app.post("/webhook", (req: Request, res: Response) => {
+  // Handle the webhook payload here
+  const data = req.body;
+  logger.info("Webhook Payload:", data);
+
+  // Respond to the webhook request
+  res.status(200).send("Webhook received successfully!");
+});
+
+export const api = functions.https.onRequest(app);
+
