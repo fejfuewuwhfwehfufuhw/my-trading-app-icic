@@ -1,27 +1,25 @@
-import * as functions from "firebase-functions";
-import * as logger from "firebase-functions/logger";
+import {onRequest} from "firebase-functions/v2/https";
+import {initializeApp} from "firebase-admin/app";
+import {setGlobalOptions} from "firebase-functions/v2";
 import express, {Express, Request, Response} from "express";
-// import * as crypto from "crypto";
+import {order} from "./services/order";
 import {getCustomerDetails} from "./services/customerDetails";
 
-// const secret = functions.config().icicidirect.crypto ?? "SECRET_KEY";
-const API_KEY = functions.config().icicidirect.key ?? "API_KEY";
-
-// const timeStamp = new Date().getTime().toString();
-// const data = JSON.stringify({}); // 'body' is the body of the current request
-// const rawChecksum = timeStamp+"\r\n"+data;
-
-// const checksum = crypto.createHmac("sha256", secret).update(rawChecksum);
-
-// to base64
-// checksum.digest("base64");
+initializeApp();
+setGlobalOptions({region: "asia-south1"});
 
 const app: Express = express();
-
 app.use(express.json());
+let sessionToken = "";
+const apiKey = "";
 
 app.get("/health", (req, res) => {
   res.status(200).send({status: "OK"});
+});
+
+app.post("/webhook", async (req: Request, res: Response) => {
+  await order(req, apiKey, sessionToken);
+  res.status(200).send();
 });
 
 app.post("/redirect-url", async (req: Request, res: Response) => {
@@ -29,16 +27,17 @@ app.post("/redirect-url", async (req: Request, res: Response) => {
   const data = req.body;
   const apiSession = data.API_Session;
 
-  logger.info("API Session Established: ", apiSession);
+  // logger.info("API Session Established: ", apiSession);
   const customerDetails = await getCustomerDetails({
     SessionToken: apiSession,
-    AppKey: API_KEY,
+    AppKey: apiKey,
   });
+  sessionToken = customerDetails.data.Success?.session_token;
   // Respond to the webhook request
   res.status(200)
-    .send(`Webhook received successfully! 
-    ${JSON.stringify(customerDetails.data)}`);
+    .send(`Webhook received successfully!
+    ${JSON.stringify(customerDetails.data.Success?.idirect_user_name)}`);
 });
-
-export const api = functions.https.onRequest(app);
-
+// Take the text parameter passed to this HTTP endpoint and insert it into
+// Firestore under the path /messages/:documentId/original
+exports.api = onRequest(app);
