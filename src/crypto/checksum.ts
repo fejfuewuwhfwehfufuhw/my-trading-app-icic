@@ -1,8 +1,7 @@
 import crypto from "crypto";
-// import {defineSecret} from "firebase-functions/lib/params";
+import {defineSecret} from "firebase-functions/params";
 
-// const secretKey = defineSecret("ICICI_DIRECT_SECRET_KEY");
-const secretKey = "ICICI_DIRECT_SECRET_KEY";
+const secretKey = defineSecret("ICICI_SECRET_KEY");
 
 export const checksum = (body: any) => {
   const timeStamp = new Date().getTime().toString();

@@ -4,6 +4,7 @@ import {setGlobalOptions} from "firebase-functions/v2";
 import express, {Express, Request, Response} from "express";
 import {order} from "./services/order";
 import {getCustomerDetails} from "./services/customerDetails";
+import {defineSecret} from "firebase-functions/params";
 
 initializeApp();
 setGlobalOptions({region: "asia-south1"});
@@ -11,14 +12,14 @@ setGlobalOptions({region: "asia-south1"});
 const app: Express = express();
 app.use(express.json());
 let sessionToken = "";
-const apiKey = "";
+const apiKey = defineSecret("ICICI_API_KEY");
 
 app.get("/health", (req, res) => {
   res.status(200).send({status: "OK"});
 });
 
 app.post("/webhook", async (req: Request, res: Response) => {
-  await order(req, apiKey, sessionToken);
+  await order(req, apiKey.value(), sessionToken);
   res.status(200).send();
 });
 
@@ -30,7 +31,7 @@ app.post("/redirect-url", async (req: Request, res: Response) => {
   // logger.info("API Session Established: ", apiSession);
   const customerDetails = await getCustomerDetails({
     SessionToken: apiSession,
-    AppKey: apiKey,
+    AppKey: apiKey.value(),
   });
   sessionToken = customerDetails.data.Success?.session_token;
   // Respond to the webhook request
