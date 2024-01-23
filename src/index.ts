@@ -5,6 +5,7 @@ import express, {Express, Request, Response} from "express";
 import {order} from "./services/order";
 import {getCustomerDetails} from "./services/customerDetails";
 import {defineSecret} from "firebase-functions/params";
+import {BreezeConnect} from "breezeconnect";
 
 initializeApp();
 setGlobalOptions({region: "asia-south1"});
@@ -13,6 +14,9 @@ const app: Express = express();
 app.use(express.json());
 let sessionToken = "";
 const apiKey = defineSecret("ICICI_API_KEY");
+const secretKey = defineSecret("ICICI_SECRET_KEY");
+
+const breeze = new BreezeConnect({"appKey": apiKey.value()});
 
 app.get("/health", (req, res) => {
   res.status(200).send({status: "OK"});
@@ -20,6 +24,7 @@ app.get("/health", (req, res) => {
 
 app.post("/webhook", async (req: Request, res: Response) => {
   await order(req, apiKey.value(), sessionToken);
+  breeze.generateSession(secretKey.value(), sessionToken);
   res.status(200).send();
 });
 

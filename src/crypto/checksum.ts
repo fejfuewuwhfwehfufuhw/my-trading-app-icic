@@ -9,7 +9,7 @@ export const checksum = (body: any) => {
   const rawChecksum = timeStamp + "\r\n" + data;
 
   const checksum = crypto
-    .createHmac("sha256", secretKey).update(rawChecksum);
+    .createHmac("sha256", secretKey.value()).update(rawChecksum);
 
   // to base64
   return {timestamp: timeStamp, checksum: checksum.digest("base64")};
