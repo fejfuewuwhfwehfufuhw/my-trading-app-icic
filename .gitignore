@@ -2,9 +2,6 @@
 lib/**/*.js
 lib/**/*.js.map
 
-# TypeScript v1 declaration files
-types/
-
 # Node.js dependency directory
 node_modules/
 
