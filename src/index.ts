@@ -2,8 +2,6 @@ import {onRequest} from "firebase-functions/v2/https";
 import {initializeApp} from "firebase-admin/app";
 import {setGlobalOptions} from "firebase-functions/v2";
 import express, {Express, Request, Response} from "express";
-import {order} from "./services/order";
-import {getCustomerDetails} from "./services/customerDetails";
 import {defineSecret} from "firebase-functions/params";
 import {BreezeConnect} from "breezeconnect";
 
@@ -12,38 +10,86 @@ setGlobalOptions({region: "asia-south1"});
 
 const app: Express = express();
 app.use(express.json());
-let sessionToken = "";
 const apiKey = defineSecret("ICICI_API_KEY");
 const secretKey = defineSecret("ICICI_SECRET_KEY");
 
-const breeze = new BreezeConnect({"appKey": apiKey.value()});
+let breeze: BreezeConnect;
 
 app.get("/health", (req, res) => {
   res.status(200).send({status: "OK"});
 });
 
 app.post("/webhook", async (req: Request, res: Response) => {
-  await order(req, apiKey.value(), sessionToken);
-  breeze.generateSession(secretKey.value(), sessionToken);
-  res.status(200).send();
+  const {action, strikePrice, right, expiry} = req.body;
+  let result;
+  switch (action) {
+  case "buy":
+    result = await breeze.placeOrder(
+      {
+        stockCode: "NIFTY",
+        exchangeCode: "NFO",
+        product: "options",
+        action: action,
+        orderType: "limit",
+        quantity: 50,
+        price: "27.55",
+        validity: "day",
+        validityDate: expiry,
+        disclosedQuantity: "0",
+        expiryDate: expiry,
+        right: right,
+        strikePrice: strikePrice,
+      },
+    );
+    break;
+  case "sell":
+    result = breeze.squareOff(
+      {
+        exchangeCode: "NFO",
+        product: "options",
+        stockCode: "NIFTY",
+        expiryDate: expiry,
+        right: right,
+        strikePrice: strikePrice,
+        action: action,
+        orderType: "market",
+        validity: "day",
+        stoploss: "0",
+        quantity: "50",
+        price: "0",
+        validityDate: expiry,
+        tradePassword: "",
+        disclosedQuantity: "0",
+      },
+    );
+    break;
+  default:
+    result = {message: "I don't know what to do!!"};
+  }
+
+  res.status(200).send(JSON.stringify(result));
+});
+
+app.get("/funds", async (req: Request, res: Response) => {
+  res.status(200).send(JSON.stringify(await breeze.getFunds()));
 });
 
 app.post("/redirect-url", async (req: Request, res: Response) => {
-  // Handle the webhook payload here
   const data = req.body;
-  const apiSession = data.API_Session;
+  const sessionToken = data.API_Session;
+  breeze = new BreezeConnect({"appKey": apiKey.value()});
+  const customerDetails = await breeze
+    .generateSession(secretKey.value(), sessionToken)
+    .then(async () => {
+      return await breeze.getCustomerDetails(sessionToken);
+    });
+  const userName = customerDetails.Success?.idirect_user_name;
 
-  // logger.info("API Session Established: ", apiSession);
-  const customerDetails = await getCustomerDetails({
-    SessionToken: apiSession,
-    AppKey: apiKey.value(),
-  });
-  sessionToken = customerDetails.data.Success?.session_token;
-  // Respond to the webhook request
   res.status(200)
     .send(`Webhook received successfully!
-    ${JSON.stringify(customerDetails.data.Success?.idirect_user_name)}`);
+    ${userName}`);
 });
-// Take the text parameter passed to this HTTP endpoint and insert it into
-// Firestore under the path /messages/:documentId/original
-exports.api = onRequest(app);
+
+exports.api = onRequest({
+  secrets: ["ICICI_API_KEY", "ICICI_SECRET_KEY"],
+}, app);
