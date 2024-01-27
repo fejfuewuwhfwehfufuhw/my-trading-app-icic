@@ -4,6 +4,8 @@ import {setGlobalOptions} from "firebase-functions/v2";
 import express, {Express, Request, Response} from "express";
 import {defineSecret} from "firebase-functions/params";
 import {BreezeConnect} from "breezeconnect";
+import {buyAction} from "./services/buyActions";
+import {squareOffAction} from "./services/squareOffAction";
 
 initializeApp();
 setGlobalOptions({region: "asia-south1"});
@@ -24,44 +26,10 @@ app.post("/webhook", async (req: Request, res: Response) => {
   let result;
   switch (action) {
   case "buy":
-    result = await breeze.placeOrder(
-      {
-        stockCode: "NIFTY",
-        exchangeCode: "NFO",
-        product: "options",
-        action: action,
-        orderType: "limit",
-        quantity: 50,
-        price: "27.55",
-        validity: "day",
-        validityDate: expiry,
-        disclosedQuantity: "0",
-        expiryDate: expiry,
-        right: right,
-        strikePrice: strikePrice,
-      },
-    );
+    result = await buyAction(action, expiry, right, strikePrice, breeze);
     break;
   case "sell":
-    result = breeze.squareOff(
-      {
-        exchangeCode: "NFO",
-        product: "options",
-        stockCode: "NIFTY",
-        expiryDate: expiry,
-        right: right,
-        strikePrice: strikePrice,
-        action: action,
-        orderType: "market",
-        validity: "day",
-        stoploss: "0",
-        quantity: "50",
-        price: "0",
-        validityDate: expiry,
-        tradePassword: "",
-        disclosedQuantity: "0",
-      },
-    );
+    result = await squareOffAction(action, expiry, right, strikePrice, breeze);
     break;
   default:
     result = {message: "I don't know what to do!!"};

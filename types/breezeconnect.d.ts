@@ -20,7 +20,7 @@ declare module "breezeconnect" {
       action: string,
       orderType: string,
       stoploss?: string,
-      quantity: number,
+      quantity: string,
       price: string,
       validity: string,
       validityDate?: string,
@@ -48,7 +48,7 @@ declare module "breezeconnect" {
       stoploss: string,
       quantity: string,
       price: string,
-      validityDate: string,
+      validityDate?: string,
       tradePassword: string,
       disclosedQuantity: string,
     }): Promise<any | undefined>;
