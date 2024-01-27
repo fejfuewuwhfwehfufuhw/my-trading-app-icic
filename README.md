@@ -1,6 +1,6 @@
-# Algorithmic Trading App with ICICI Direct Breeze Connect SDK (Typescript)
+# Trading View Webhooks with ICICI Direct Breeze Connect JS SDK (Typescript)
 
-Welcome to the Algorithmic Trading App powered by ICICI Direct Breeze Connect SDK, crafted with Typescript and deployed seamlessly on Firebase Functions!
+Welcome to the Trading View Webhooks powered by ICICI Direct Breeze Connect SDK, crafted with Typescript and deployed seamlessly on Firebase Functions!
 
 ## Overview
 
@@ -17,8 +17,8 @@ This personal project aims to streamline your trading journey by integrating wit
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/your-username/algorithmic-trading-app.git
-   cd algorithmic-trading-app
+   git clone https://github.com/jainanuj94/my-trading-app.git
+   cd my-trading-app
    ```
 2. **Installing dependencies**
    ```bash
