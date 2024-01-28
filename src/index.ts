@@ -2,18 +2,17 @@ import {onRequest} from "firebase-functions/v2/https";
 import {initializeApp} from "firebase-admin/app";
 import {setGlobalOptions} from "firebase-functions/v2";
 import express, {Express, Request, Response} from "express";
-import {defineSecret} from "firebase-functions/params";
 import {BreezeConnect} from "breezeconnect";
 import {buyAction} from "./services/buyActions";
 import {squareOffAction} from "./services/squareOffAction";
+import {apiKey, secretKey} from "./config";
+import {initBot, sendMessage} from "./telegram/bot";
 
 initializeApp();
 setGlobalOptions({region: "asia-south1"});
 
 const app: Express = express();
 app.use(express.json());
-const apiKey = defineSecret("ICICI_API_KEY");
-const secretKey = defineSecret("ICICI_SECRET_KEY");
 
 let breeze: BreezeConnect;
 
@@ -26,10 +25,23 @@ app.post("/webhook", async (req: Request, res: Response) => {
   let result;
   switch (action) {
   case "buy":
-    result = await buyAction(action, expiry, right, strikePrice, breeze);
+    try {
+      result = await buyAction(action, expiry, right, strikePrice, breeze);
+      sendMessage(`Buy Order Details: ${JSON.stringify(result)}`);
+    } catch (e: any) {
+      sendMessage("Failed to place buy order");
+      result = {message: "Failed to place buy order"};
+    }
     break;
   case "sell":
-    result = await squareOffAction(action, expiry, right, strikePrice, breeze);
+    try {
+      result = await squareOffAction(action, expiry,
+        right, strikePrice, breeze);
+      sendMessage(`Sell Order Details: ${JSON.stringify(result)}`);
+    } catch (e: any) {
+      sendMessage("Failed to place sell order");
+      result = {message: "Failed to place sell order"};
+    }
     break;
   default:
     result = {message: "I don't know what to do!!"};
@@ -46,6 +58,7 @@ app.post("/redirect-url", async (req: Request, res: Response) => {
   const data = req.body;
   const sessionToken = data.API_Session;
   breeze = new BreezeConnect({"appKey": apiKey.value()});
+  initBot();
   const customerDetails = await breeze
     .generateSession(secretKey.value(), sessionToken)
     .then(async () => {
@@ -59,5 +72,9 @@ app.post("/redirect-url", async (req: Request, res: Response) => {
 });
 
 exports.api = onRequest({
-  secrets: ["ICICI_API_KEY", "ICICI_SECRET_KEY"],
+  secrets: ["ICICI_API_KEY",
+    "ICICI_SECRET_KEY",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_PERSONAL_CHAT_ID",
+  ],
 }, app);
